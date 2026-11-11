@@ -1,0 +1,31 @@
+// Prueba de seguridad: inicia sesión como admin y como trabajador y comprueba qué puede ver/hacer cada uno.
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const dir = dirname(fileURLToPath(import.meta.url));
+const env = Object.fromEntries(readFileSync(join(dir, '.env'), 'utf8').split(/\r?\n/).filter(l => l.includes('=')).map(l => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]));
+const U = env.SUPABASE_URL, ANON = env.SUPABASE_ANON_KEY;
+const login = async dni => { const r = await fetch(`${U}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: `${dni}@chahua.pe`, password: dni }) }); const b = await r.json(); if (!r.ok) throw new Error(dni + ': ' + JSON.stringify(b)); return b.access_token; };
+const q = async (tok, path, opt = {}) => { const r = await fetch(`${U}/rest/v1/${path}`, { ...opt, headers: { apikey: ANON, Authorization: `Bearer ${tok || ANON}`, 'Content-Type': 'application/json', Prefer: 'return=representation', ...(opt.headers || {}) } }); const t = await r.text(); return { s: r.status, b: t ? JSON.parse(t) : null }; };
+const ok = (c, m) => console.log((c ? 'PASA ' : 'FALLA') + '  ' + m);
+
+const admin = await login('45781236'), carlos = await login('72345678');
+let r = await q(null, 'personal?select=dni'); ok(r.s >= 400 || r.b.length === 0, `Sin sesión no se ve personal (${r.s})`);
+r = await q(admin, 'personal?select=dni'); ok(r.b.length === 5, `Admin ve 5 trabajadores (${r.b.length})`);
+r = await q(carlos, 'personal?select=dni'); ok(r.b.length === 1 && r.b[0].dni === '72345678', `Carlos solo se ve a sí mismo (${r.b.length})`);
+r = await q(carlos, 'asistencias?select=personal_id'); ok(new Set(r.b.map(x => x.personal_id)).size === 1, `Carlos solo ve sus asistencias (${r.b.length} filas)`);
+r = await q(carlos, 'pagos?select=periodo_mes,total_pagar'); ok(r.b.length === 2, `Carlos ve solo sus 2 pagos: ${JSON.stringify(r.b)}`);
+r = await q(carlos, 'v_asistencia_mes_actual?select=nombres,dias_asistidos,tardanzas,dias_permiso,dias_falta'); ok(r.b.length === 1, `Vista mensual para Carlos: ${JSON.stringify(r.b)}`);
+r = await q(admin, 'v_asistencia_semana_actual?select=nombres'); ok(r.b.length === 5, `Vista semanal para admin: ${r.b.length} filas`);
+const me = (await q(carlos, 'personal?select=id')).b[0].id;
+r = await q(carlos, 'permisos', { method: 'POST', body: JSON.stringify({ personal_id: me, tipo_permiso: 'personal', fecha_inicio: '2026-12-01', fecha_fin: '2026-12-01', motivo: 'PRUEBA', origen: 'movil' }) });
+ok(r.s === 201 && r.b[0].estado === 'pendiente', `Carlos puede solicitar permiso (queda pendiente) (${r.s})`);
+const pid = r.b?.[0]?.id;
+r = await q(carlos, `permisos?id=eq.${pid}`, { method: 'PATCH', body: JSON.stringify({ estado: 'aprobado' }) }); ok(Array.isArray(r.b) && r.b.length === 0, `Carlos NO puede aprobarse un permiso (${r.s}, filas ${r.b?.length})`);
+r = await q(carlos, 'permisos', { method: 'POST', body: JSON.stringify({ personal_id: me, tipo_permiso: 'personal', fecha_inicio: '2026-12-02', fecha_fin: '2026-12-02', motivo: 'PRUEBA', origen: 'movil', estado: 'aprobado' }) }); ok(r.s >= 400, `Carlos NO puede crear un permiso ya aprobado (${r.s})`);
+r = await q(carlos, 'rpc/generar_planilla', { method: 'POST', body: JSON.stringify({ p_periodo: '2026-11' }) }); ok(r.s >= 400, `Carlos NO puede generar planilla (${r.s})`);
+r = await q(carlos, 'asistencias', { method: 'POST', body: JSON.stringify({ personal_id: me, fecha: '2026-11-09', hora_entrada: '07:50' }) }); ok(r.s >= 400, `Carlos NO puede marcarse asistencia (${r.s})`);
+r = await q(admin, `permisos?id=eq.${pid}`, { method: 'PATCH', body: JSON.stringify({ estado: 'aprobado' }) }); ok(r.b?.[0]?.estado === 'aprobado' && r.b[0].revisado_por, `Admin aprueba y queda registrado quién lo revisó`);
+r = await q(admin, `permisos?id=eq.${pid}`, { method: 'DELETE' }); ok(r.s < 300, `Admin borra el permiso de prueba (${r.s})`);
+r = await q(admin, 'rpc/generar_planilla', { method: 'POST', body: JSON.stringify({ p_periodo: '2026-11' }) }); ok(r.s === 200 && r.b.length === 5, `Admin genera planilla de noviembre (${r.b?.length} filas)`);
+r = await q(admin, 'conocimiento_empresa?select=categoria'); ok(r.b.length === 10, `Base de conocimiento: ${r.b.length} reglas`);

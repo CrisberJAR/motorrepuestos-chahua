@@ -1,0 +1,12 @@
+{
+  "name": "chahua-supabase-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "esquema": "node ejecutar-sql.mjs 01_esquema_chahua.sql",
+    "usuarios": "node crear-usuarios.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}

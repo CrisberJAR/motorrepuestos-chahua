@@ -1,0 +1,28 @@
+# Secretos: nunca subir a GitHub
+.env
+.env.*
+!.env.example
+supabase/.env
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+
+# Flutter / Android
+movil/build/
+movil/.dart_tool/
+movil/.flutter-plugins
+movil/.flutter-plugins-dependencies
+movil/android/local.properties
+movil/android/key.properties
+*.jks
+*.keystore
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Binarios (el APK se publica como Release de GitHub)
+*.apk

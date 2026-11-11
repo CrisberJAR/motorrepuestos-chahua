@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/* Motorrepuestos Chahua · tokens de diseño (claro / oscuro) */
+:root {
+  --fondo: #eceeed;
+  --superficie: #ffffff;
+  --hundido: #f4f6f5;
+  --tinta: #17202a;
+  --tenue: #5a6572;
+  --linea: #d6dcdf;
+  --acento: #cf4510;
+  --acento-suave: #fbe4d8;
+  --acento-tinta: #ffffff;
+  --ok: #2a7a4b;
+  --ok-suave: #dcf0e3;
+  --alerta: #9a6200;
+  --alerta-suave: #faedd0;
+  --peligro: #bc2a2a;
+  --peligro-suave: #f8dcdc;
+  --info: #285fa6;
+  --info-suave: #dce7f6;
+  --lateral: #1b242e;
+  --lateral-tinta: #d7dee5;
+  --lateral-tenue: #8d99a6;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #101419;
+    --superficie: #191f27;
+    --hundido: #141a20;
+    --tinta: #e5e9ee;
+    --tenue: #97a1ae;
+    --linea: #2a323c;
+    --acento: #f06b30;
+    --acento-suave: #3a2219;
+    --acento-tinta: #16110e;
+    --ok: #5cc38a;
+    --ok-suave: #163023;
+    --alerta: #e3b04b;
+    --alerta-suave: #382c13;
+    --peligro: #f07474;
+    --peligro-suave: #3a1c1c;
+    --info: #73a9ee;
+    --info-suave: #172739;
+    --lateral: #0b0f13;
+    --lateral-tinta: #cdd5de;
+    --lateral-tenue: #7c8794;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-hundido: var(--hundido);
+  --color-tinta: var(--tinta);
+  --color-tenue: var(--tenue);
+  --color-linea: var(--linea);
+  --color-acento: var(--acento);
+  --color-acento-suave: var(--acento-suave);
+  --color-acento-tinta: var(--acento-tinta);
+  --color-ok: var(--ok);
+  --color-ok-suave: var(--ok-suave);
+  --color-alerta: var(--alerta);
+  --color-alerta-suave: var(--alerta-suave);
+  --color-peligro: var(--peligro);
+  --color-peligro-suave: var(--peligro-suave);
+  --color-info: var(--info);
+  --color-info-suave: var(--info-suave);
+  --color-lateral: var(--lateral);
+  --color-lateral-tinta: var(--lateral-tinta);
+  --color-lateral-tenue: var(--lateral-tenue);
+  --font-display: var(--fuente-display), "Arial Narrow", sans-serif;
+  --font-sans: var(--fuente-cuerpo), system-ui, sans-serif;
+  --font-mono: var(--fuente-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--font-sans);
+}
+
+.titulo-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.cifras {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+@keyframes pulso {
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulso {
+  animation: pulso 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
