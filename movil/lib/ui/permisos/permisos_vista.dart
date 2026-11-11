@@ -6,6 +6,7 @@ import '../../core/tema.dart';
 import '../../data/modelos.dart';
 import '../../data/repositorios.dart';
 import '../comunes/widgets.dart';
+import '../comunes/perfil_boton.dart';
 import '../sesion_vm.dart';
 import 'permisos_vm.dart';
 
@@ -19,7 +20,7 @@ class PermisosVista extends StatelessWidget {
       create: (ctx) => PermisosVm(ctx.read<DatosRepositorio>(), yo)..iniciar(),
       child: Consumer<PermisosVm>(builder: (context, vm, _) {
         return Scaffold(
-          appBar: AppBar(title: Text(yo.esAdmin ? 'PERMISOS' : 'MIS PERMISOS')),
+          appBar: AppBar(title: Text(yo.esAdmin ? 'PERMISOS' : 'MIS PERMISOS'), actions: const [BotonPerfil()]),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _abrirFormulario(context, vm),
             icon: const Icon(Icons.add),
@@ -27,7 +28,7 @@ class PermisosVista extends StatelessWidget {
           ),
           body: RefreshIndicator(
             onRefresh: vm.cargar,
-            child: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 96), children: [
+            child: ListView(padding: rellenoLista(context, abajo: 96), children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(children: [
@@ -66,6 +67,7 @@ class PermisosVista extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
       builder: (_) => ChangeNotifierProvider.value(value: vm, child: const _FormularioPermiso()),
     );

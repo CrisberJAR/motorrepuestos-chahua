@@ -16,7 +16,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
 
   const { data: yo } = await sb
     .from('personal')
-    .select('id, dni, nombres, apellidos, cargo, area, rol, estado, pago_por_dia, foto_rostro_url')
+    .select('id, dni, nombres, apellidos, cargo, area, rol, estado, pago_por_dia, tipo_pago, foto_rostro_url, foto_perfil_url, telefono, correo')
     .eq('user_id', user.id)
     .maybeSingle();
 

@@ -106,3 +106,12 @@ export function ultimosLaborables(hasta: string, n: number) {
 
 export const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export const horaCorta = (h: string | null) => (h ? h.slice(0, 5) : '--:--');
+
+/** "09/11/2026" */
+export const fechaNum = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+/** "1 nov – 7 nov 2026" (rango corto para pagos) */
+export function rangoCorto(desde: string, hasta: string) {
+  if (desde === hasta) return `${diaMes(desde)} ${desde.slice(0, 4)}`;
+  return `${diaMes(desde)} – ${diaMes(hasta)} ${hasta.slice(0, 4)}`;
+}

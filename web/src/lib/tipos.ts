@@ -13,8 +13,15 @@ export type Yo = {
   area: string;
   rol: Rol;
   pago_por_dia: number;
+  tipo_pago: TipoPago;
   foto_rostro_url: string | null;
+  foto_perfil_url: string | null;
+  telefono: string | null;
+  correo: string | null;
 };
+
+export type TipoPago = 'fijo' | 'variable';
+export type MetodoPago = 'efectivo' | 'yape' | 'plin' | 'transferencia' | 'otro';
 
 export type Personal = {
   id: string;
@@ -28,6 +35,7 @@ export type Personal = {
   correo: string | null;
   sueldo_base: number;
   pago_por_dia: number;
+  tipo_pago: TipoPago;
   hora_entrada: string;
   hora_salida: string;
   tolerancia_min: number;
@@ -75,7 +83,9 @@ export type Permiso = {
 export type Pago = {
   id: string;
   personal_id: string;
-  periodo_mes: string;
+  periodo_mes: string | null;
+  fecha_desde: string;
+  fecha_hasta: string;
   dias_asistidos: number;
   dias_permiso: number;
   dias_permiso_pagado: number;
@@ -88,9 +98,57 @@ export type Pago = {
   total_pagar: number;
   estado_pago: 'pendiente' | 'pagado';
   fecha_pago: string | null;
+  metodo_pago: MetodoPago;
+  numero_operacion: string | null;
   observacion: string | null;
+  created_at?: string;
   personal?: { id: string; dni: string; nombres: string; apellidos: string; cargo: string; foto_rostro_url: string | null } | null;
 };
+
+/** Lo que se le debe a un trabajador desde su último pago hasta hoy (función pagos_pendientes). */
+export type PagoPendiente = {
+  personal_id: string;
+  dni: string;
+  nombres: string;
+  apellidos: string;
+  cargo: string;
+  foto_rostro_url: string | null;
+  foto_perfil_url: string | null;
+  tipo_pago: TipoPago;
+  pago_por_dia: number;
+  ultimo_pago_hasta: string | null;
+  ultimo_pago_fecha: string | null;
+  desde: string;
+  hasta: string;
+  dias_asistidos: number;
+  dias_permiso_pagado: number;
+  dias_falta: number;
+  tardanzas: number;
+  dias_sin_monto: number;
+  monto_pendiente: number;
+};
+
+/** Un día dentro de un pago (función detalle_pago). */
+export type DiaPago = {
+  fecha: string;
+  estado: EstadoDia;
+  hora_entrada: string | null;
+  hora_salida: string | null;
+  permiso_con_goce: boolean;
+  monto_dia: number | null;
+  monto: number;
+  pagable: boolean;
+  pagado: boolean;
+};
+
+export const METODOS_PAGO: [MetodoPago, string][] = [
+  ['efectivo', 'Efectivo'],
+  ['yape', 'Yape'],
+  ['plin', 'Plin'],
+  ['transferencia', 'Transferencia'],
+  ['otro', 'Otro'],
+];
+export const ETIQUETA_METODO = Object.fromEntries(METODOS_PAGO) as Record<MetodoPago, string>;
 
 export const ETIQUETA_DIA: Record<EstadoDia, string> = {
   asistio: 'Asistió',

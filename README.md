@@ -35,7 +35,7 @@ Para todos, el usuario y la contraseña inicial son el DNI.
 | Cajera (Lucía Mendoza) | 71239845 |
 
 ## 1. Base de datos
-Para ejecutarla desde cero, usa `supabase/01_esquema_chahua.sql` (en el SQL Editor o con `node supabase/ejecutar-sql.mjs 01_esquema_chahua.sql`). Después aplica `02_ajuste_rostro.sql` y `03_planilla_sin_cambios.sql`, y crea los accesos con `node supabase/crear-usuarios.mjs`.
+Para ejecutarla desde cero, usa `supabase/01_esquema_chahua.sql` (en el SQL Editor o con `node supabase/ejecutar-sql.mjs 01_esquema_chahua.sql`). Después aplica `02_ajuste_rostro.sql`, `03_planilla_sin_cambios.sql` y `04_pagos_flexibles.sql`, y crea los accesos con `node supabase/crear-usuarios.mjs`.
 
 ## 2. Web y API (Next.js)
 ```bash
@@ -63,5 +63,8 @@ flutter build apk --release --dart-define=API_URL=https://chahua-personal.vercel
 - Tolerancia de 10 minutos: hasta las 08:10 es puntual; desde las 08:11 es tardanza. **La tardanza no descuenta.**
 - Un día laborable sin entrada y sin permiso aprobado cuenta como falta. Las faltas no se pagan.
 - Los permisos **no se pagan** por defecto. El administrador puede marcarlos "con goce".
-- Pago = (días asistidos + días de permiso con goce) × pago por día − descuentos + bonos.
+- Se paga en cualquier momento (semana, mes o días sueltos), desde el día siguiente al último pago. Cada pago guarda el método (efectivo, Yape, Plin, transferencia u otro).
+- Pago fijo por día o **por rendimiento**: el administrador registra el monto de cada día al pagar. Pago = suma de los días asistidos + permisos con goce + bonos − descuentos.
+- Reportes de asistencia y pagos en PDF o Excel, y comprobante PDF de cada pago (web y app).
+- Cada usuario tiene Configuración: foto de perfil, datos de contacto, cambio de contraseña, términos, privacidad y ayuda.
 - Solo el administrador registra asistencia, con el reconocimiento facial **desde su celular**. El personal solo consulta su información y solicita permisos.

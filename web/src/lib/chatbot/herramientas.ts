@@ -18,7 +18,8 @@ export const DECLARACIONES: FunctionDeclaration[] = [
     name: 'consultar_estado_personal',
     description:
       'Consulta en tiempo real los datos de un trabajador de Motorrepuestos Chahua: asistencias, tardanzas, faltas y permisos del mes ' +
-      '(con las fechas exactas), sus pagos (montos y si ya se pagaron), el pago estimado del mes en curso y el estado de sus solicitudes de permiso. ' +
+      '(con las fechas exactas), lo que se le debe desde su último pago (saldo por cobrar), los pagos que ya recibió (fecha, periodo, monto y método) ' +
+      'y el estado de sus solicitudes de permiso. ' +
       'Úsala SIEMPRE antes de responder cualquier pregunta sobre datos de una persona. Busca por DNI o por nombre.',
     parameters: {
       type: Type.OBJECT,
@@ -55,13 +56,13 @@ export const DECLARACIONES: FunctionDeclaration[] = [
 /* ------------------------------------------------------------------ */
 /* Resolución del trabajador respetando el rol de quien pregunta       */
 /* ------------------------------------------------------------------ */
-type Trabajador = { id: string; dni: string; nombres: string; apellidos: string; cargo: string; area: string; pago_por_dia: number; rol: string };
+type Trabajador = { id: string; dni: string; nombres: string; apellidos: string; cargo: string; area: string; pago_por_dia: number; tipo_pago: string; rol: string };
 
 const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
 async function resolverTrabajador(ctx: Contexto, dni?: string, nombre?: string): Promise<{ trabajador?: Trabajador; error?: string; opciones?: string[] }> {
   const sb = supabaseAdmin();
-  const campos = 'id, dni, nombres, apellidos, cargo, area, pago_por_dia, rol';
+  const campos = 'id, dni, nombres, apellidos, cargo, area, pago_por_dia, tipo_pago, rol';
   const yo = ctx.sesion.personal;
 
   if (yo.rol !== 'admin') {
@@ -123,8 +124,8 @@ async function consultarEstadoPersonal(args: Record<string, unknown>, ctx: Conte
 
   const [detalleR, pagosR, permisosR] = await Promise.all([
     sb.rpc('detalle_asistencia', { p_desde: desde, p_hasta: hasta, p_personal_id: trabajador.id }),
-    sb.from('pagos').select('periodo_mes, dias_asistidos, dias_permiso, dias_permiso_pagado, dias_falta, tardanzas_acumuladas, pago_por_dia, monto_base, descuentos, bonos, total_pagar, estado_pago, fecha_pago')
-      .eq('personal_id', trabajador.id).order('periodo_mes', { ascending: false }).limit(3),
+    sb.from('pagos').select('fecha_desde, fecha_hasta, dias_asistidos, dias_permiso_pagado, monto_base, descuentos, bonos, total_pagar, fecha_pago, metodo_pago, numero_operacion')
+      .eq('personal_id', trabajador.id).order('fecha_hasta', { ascending: false }).limit(4),
     sb.from('permisos').select('tipo_permiso, fecha_inicio, fecha_fin, motivo, estado, con_goce, origen, created_at')
       .eq('personal_id', trabajador.id).order('created_at', { ascending: false }).limit(6),
   ]);
@@ -134,17 +135,14 @@ async function consultarEstadoPersonal(args: Record<string, unknown>, ctx: Conte
   const transcurridos = dias.filter((d) => d.estado !== 'futuro');
   const fechas = (estado: string) => transcurridos.filter((d) => d.estado === estado).map((d) => d.fecha);
   const asistidos = transcurridos.filter((d) => d.estado === 'asistio' || d.estado === 'tardanza').length;
-  const permisoPagado = transcurridos.filter((d) => d.estado === 'permiso' && d.permiso_con_goce).length;
   const pagoPorDia = Number(trabajador.pago_por_dia);
   const hoyDia = dias.find((d) => d.fecha === hoy);
-
-  const guardado = (pagosR.data || []).find((p) => p.periodo_mes === periodo);
-  // Mes en curso sin pagar: se calcula en vivo con la asistencia de hoy (la planilla guardada puede estar desactualizada).
-  const enVivo = periodo === periodoDe(hoy) && guardado?.estado_pago !== 'pagado';
-  const pagoRegistrado = enVivo ? undefined : guardado;
-  const descuentos = Number(guardado?.descuentos || 0);
-  const bonos = Number(guardado?.bonos || 0);
-  const estimado = Math.max(0, (asistidos + permisoPagado) * pagoPorDia - descuentos + bonos);
+  // Saldo por cobrar en vivo: desde el día siguiente al último pago hasta hoy.
+  const pendR = await sb.rpc('pagos_pendientes', { p_personal_id: trabajador.id });
+  const pend = (pendR.data || [])[0] as
+    | { desde: string; hasta: string; ultimo_pago_hasta: string | null; dias_asistidos: number; dias_permiso_pagado: number; dias_falta: number; dias_sin_monto: number; monto_pendiente: number; tipo_pago: string }
+    | undefined;
+  const metodo: Record<string, string> = { efectivo: 'Efectivo', yape: 'Yape', plin: 'Plin', transferencia: 'Transferencia', otro: 'Otro' };
 
   return {
     encontrado: true,
@@ -153,6 +151,7 @@ async function consultarEstadoPersonal(args: Record<string, unknown>, ctx: Conte
       dni: trabajador.dni,
       cargo: trabajador.cargo,
       area: trabajador.area,
+      tipo_de_pago: trabajador.tipo_pago === 'variable' ? 'por rendimiento (el monto de cada día lo registra el administrador)' : 'fijo por día',
       pago_por_dia: soles(pagoPorDia),
     },
     periodo: { codigo: periodo, nombre: nombrePeriodo(periodo), es_mes_actual: periodo === periodoDe(hoy), datos_hasta: hoy < hasta ? hoy : hasta },
@@ -168,25 +167,28 @@ async function consultarEstadoPersonal(args: Record<string, unknown>, ctx: Conte
     fechas_tardanza: transcurridos.filter((d) => d.estado === 'tardanza').map((d) => `${fechaLarga(d.fecha, false)} (entrada ${d.hora_entrada?.slice(0, 5)})`),
     fechas_falta: fechas('falta').map((f) => fechaLarga(f, false)),
     fechas_permiso: transcurridos.filter((d) => d.estado === 'permiso').map((d) => `${fechaLarga(d.fecha, false)}${d.permiso_con_goce ? ' (con goce, se paga)' : ' (sin goce, no se paga)'}`),
-    pago_del_periodo: pagoRegistrado
+    saldo_por_cobrar: pend
       ? {
-          total: soles(Number(pagoRegistrado.total_pagar)),
-          estado: pagoRegistrado.estado_pago,
-          fecha_pago: pagoRegistrado.fecha_pago ? fechaLarga(pagoRegistrado.fecha_pago) : null,
-          detalle: `(${pagoRegistrado.dias_asistidos} días asistidos + ${pagoRegistrado.dias_permiso_pagado} de permiso con goce) × ${soles(Number(pagoRegistrado.pago_por_dia))} − descuentos ${soles(Number(pagoRegistrado.descuentos))} + bonos ${soles(Number(pagoRegistrado.bonos))}`,
-          nota: periodo === periodoDe(hoy) ? 'El mes aún no termina: el monto crece con cada día trabajado.' : undefined,
+          monto: soles(Number(pend.monto_pendiente)),
+          desde: pend.desde <= pend.hasta ? fechaLarga(pend.desde) : null,
+          hasta: fechaLarga(pend.hasta),
+          dias_a_pagar: pend.dias_asistidos + pend.dias_permiso_pagado,
+          faltas_en_ese_rango: pend.dias_falta,
+          ultimo_pago_cubrio_hasta: pend.ultimo_pago_hasta ? fechaLarga(pend.ultimo_pago_hasta) : 'sin pagos registrados',
+          nota:
+            'Se puede pagar en cualquier momento (por semana, mes o días): el administrador registra el pago cuando el trabajador lo solicita. ' +
+            (pend.dias_sin_monto ? `${pend.dias_sin_monto} día(s) aún sin monto de rendimiento, calculados con ${soles(pagoPorDia)} de referencia.` : ''),
         }
-      : {
-          total_acumulado_a_la_fecha: soles(estimado),
-          estado: enVivo ? 'mes en curso, pendiente de pago' : 'planilla aún no generada',
-          detalle: `(${asistidos} días asistidos + ${permisoPagado} de permiso con goce) × ${soles(pagoPorDia)}${descuentos ? ` − descuentos ${soles(descuentos)}` : ''}${bonos ? ` + bonos ${soles(bonos)}` : ''}`,
-          nota: enVivo ? 'El mes aún no termina: el monto crece con cada día trabajado.' : undefined,
-        },
-    ultimos_pagos: (pagosR.data || []).map((p) => ({
-      mes: nombrePeriodo(p.periodo_mes),
+      : undefined,
+    pagos_recibidos: (pagosR.data || []).map((p) => ({
+      periodo: `${fechaLarga(p.fecha_desde)} al ${fechaLarga(p.fecha_hasta)}`,
       total: soles(Number(p.total_pagar)),
-      estado: p.estado_pago,
-      fecha_pago: p.fecha_pago,
+      dias_pagados: p.dias_asistidos + p.dias_permiso_pagado,
+      bonos: soles(Number(p.bonos)),
+      descuentos: soles(Number(p.descuentos)),
+      fecha_pago: p.fecha_pago ? fechaLarga(p.fecha_pago) : null,
+      metodo: metodo[p.metodo_pago] || p.metodo_pago,
+      operacion: p.numero_operacion,
     })),
     permisos_recientes: (permisosR.data || []).map((p) => ({
       tipo: p.tipo_permiso,

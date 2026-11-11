@@ -58,8 +58,8 @@ export function useConsulta<T>(cargar: () => Promise<T>, deps: unknown[], tablas
   return { datos, error, cargando, recargar };
 }
 
-/** URLs firmadas (1 hora) para las fotos del bucket privado rostros_personal. */
-export function useFotos(rutas: (string | null | undefined)[]) {
+/** URLs firmadas (1 hora) para las fotos de un bucket privado (por defecto, rostros_personal). */
+export function useFotos(rutas: (string | null | undefined)[], bucket = 'rostros_personal') {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const clave = rutas.filter(Boolean).sort().join('|');
 
@@ -68,7 +68,7 @@ export function useFotos(rutas: (string | null | undefined)[]) {
     if (!lista.length) return;
     let vigente = true;
     supabaseNavegador()
-      .storage.from('rostros_personal')
+      .storage.from(bucket)
       .createSignedUrls(lista, 3600)
       .then(({ data }) => {
         if (!vigente || !data) return;
@@ -79,7 +79,7 @@ export function useFotos(rutas: (string | null | undefined)[]) {
     return () => {
       vigente = false;
     };
-  }, [clave]);
+  }, [clave, bucket]);
 
   return urls;
 }

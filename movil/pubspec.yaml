@@ -41,6 +41,11 @@ dependencies:
   google_mlkit_face_detection: ^1.0.1
   intl: ^0.20.3
   http_parser: ^4.1.2
+  image_picker: ^1.2.4
+  path_provider: ^2.1.6
+  share_plus: ^13.3.1
+  open_filex: ^5.0.0
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +68,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/logo_chahua.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

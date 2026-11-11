@@ -15,12 +15,13 @@ class InicioVm extends VmBase {
   int pendientes = 0;
   Map<String, String> fotos = {};
   Map<String, String?> rutas = {};
+  PagoPendiente? porCobrar;
 
   bool get esDomingo => Fechas.diaSemana(hoy) == 7;
 
   Future<void> iniciar() async {
     await cargar();
-    escucharCambios(_repo, ['asistencias', 'permisos', 'personal'], () => cargar(silencioso: true));
+    escucharCambios(_repo, ['asistencias', 'permisos', 'personal', 'pagos'], () => cargar(silencioso: true));
   }
 
   Future<void> cargar({bool silencioso = false}) => cargarCon(() async {
@@ -39,9 +40,12 @@ class InicioVm extends VmBase {
           final resultados = await Future.wait([
             _repo.detalle(mes.desde, mes.hasta, personalId: yo.id),
             _repo.permisos(personalId: yo.id, limite: 3),
+            _repo.pagosPendientes(personalId: yo.id),
           ]);
           delMes = resultados[0] as List<DiaAsistencia>;
           permisos = resultados[1] as List<Permiso>;
+          final saldo = resultados[2] as List<PagoPendiente>;
+          porCobrar = saldo.isEmpty ? null : saldo.first;
           deHoy = delMes.where((d) => d.fecha == hoy).toList();
         }
       }, silencioso: silencioso);
@@ -50,5 +54,4 @@ class InicioVm extends VmBase {
 
   int contarHoy(bool Function(DiaAsistencia) f) => deHoy.where(f).length;
   Resumen get resumenMes => Resumen.de(delMes);
-  double get pagoAcumulado => (resumenMes.asistidos + resumenMes.permisosPagados) * yo.pagoPorDia;
 }

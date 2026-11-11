@@ -22,7 +22,7 @@ const DIAS_LABORABLES_MES = 26;
  *   4. crea su acceso: usuario = DNI, contraseña = DNI
  * Si algo falla después de insertar, deshace lo creado.
  *
- * multipart/form-data: dni, nombres, apellidos, cargo, area, telefono?, correo?, pago_por_dia,
+ * multipart/form-data: dni, nombres, apellidos, cargo, area, telefono?, correo?, pago_por_dia, tipo_pago? (fijo|variable),
  *                      hora_entrada? (08:00), tolerancia_min? (10), rol? (trabajador), imagen
  */
 export const POST = manejar(async (req) => {
@@ -39,6 +39,7 @@ export const POST = manejar(async (req) => {
   const horaEntrada = (c.hora_entrada || '08:00').trim();
   const tolerancia = c.tolerancia_min ? Number(c.tolerancia_min) : 10;
   const rol = c.rol === 'admin' ? 'admin' : 'trabajador';
+  const tipoPago = c.tipo_pago === 'variable' ? 'variable' : 'fijo';
 
   if (!/^\d{8}$/.test(dni)) throw new ErrorHttp(400, 'El DNI debe tener 8 dígitos.');
   if (!nombres || !apellidos) throw new ErrorHttp(400, 'Completa nombres y apellidos.');
@@ -65,6 +66,7 @@ export const POST = manejar(async (req) => {
       telefono: c.telefono?.trim() || null,
       correo: c.correo?.trim() || null,
       pago_por_dia: pagoPorDia,
+      tipo_pago: tipoPago,
       sueldo_base: Math.round(pagoPorDia * DIAS_LABORABLES_MES * 100) / 100,
       hora_entrada: horaEntrada.length === 5 ? `${horaEntrada}:00` : horaEntrada,
       tolerancia_min: tolerancia,

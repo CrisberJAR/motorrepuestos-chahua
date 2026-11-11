@@ -71,6 +71,9 @@ class Fechas {
     return '${m[0].toUpperCase()}${m.substring(1)} ${p[0]}';
   }
 
+  /// '1 nov – 7 nov' (o '3 nov' si es un solo día)
+  static String rango(String desde, String hasta) => desde == hasta ? diaMes(desde) : '${diaMes(desde)} – ${diaMes(hasta)}';
+
   static String horaCorta(String? hora) => hora == null ? '--:--' : hora.substring(0, 5);
 
   static String capitalizar(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';

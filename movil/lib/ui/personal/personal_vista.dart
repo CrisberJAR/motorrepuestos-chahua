@@ -32,7 +32,7 @@ class PersonalVista extends StatelessWidget {
           ),
           body: RefreshIndicator(
             onRefresh: vm.cargar,
-            child: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 96), children: [
+            child: ListView(padding: rellenoLista(context, abajo: 96), children: [
               TextField(
                 onChanged: vm.buscar,
                 decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Buscar por nombre, DNI o cargo'),
@@ -84,6 +84,48 @@ class _TarjetaPersona extends StatelessWidget {
     await _ejecutar(context, vm.cambiarFoto(persona, foto));
   }
 
+  Future<void> _pago(BuildContext context) async {
+    final monto = TextEditingController(text: persona.pagoPorDia.toStringAsFixed(2));
+    var tipo = persona.tipoPago;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, refrescar) => AlertDialog(
+          title: Text('Pago de ${persona.nombres.split(' ').first}'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SegmentedButton<String>(
+              segments: const [ButtonSegment(value: 'fijo', label: Text('Fijo')), ButtonSegment(value: 'variable', label: Text('Rendimiento'))],
+              selected: {tipo},
+              onSelectionChanged: (v) => refrescar(() => tipo = v.first),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              tipo == 'variable'
+                  ? 'El monto de cada día se registra al pagar, según su rendimiento. El pago por día sirve de referencia.'
+                  : 'Gana el mismo monto cada día asistido.',
+              style: const TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: monto,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+              decoration: InputDecoration(labelText: tipo == 'variable' ? 'Pago de referencia por día (S/)' : 'Pago por día (S/)'),
+            ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final valor = double.tryParse(monto.text);
+    if (valor == null || valor <= 0) return mostrarAviso(context, 'El pago por día debe ser mayor que 0.', error: true);
+    await _ejecutar(context, vm.cambiarPago(persona, tipo, valor));
+  }
+
   Future<void> _clave(BuildContext context) async {
     final control = TextEditingController();
     final propia = persona.id == context.read<SesionVm>().yo!.id;
@@ -123,7 +165,8 @@ class _TarjetaPersona extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(p.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.w700)),
                 Text('DNI ${p.dni} · ${p.cargo}', style: TextStyle(fontSize: 12, color: c.tenue)),
-                Text('${p.area} · ${Fechas.soles(p.pagoPorDia)}/día · entrada ${p.horaEntrada.substring(0, 5)}', style: TextStyle(fontSize: 12, color: c.tenue)),
+                Text('${p.area} · ${p.tipoPago == 'variable' ? 'por rendimiento (ref. ${Fechas.soles(p.pagoPorDia)})' : '${Fechas.soles(p.pagoPorDia)}/día'} · entrada ${p.horaEntrada.substring(0, 5)}',
+                    style: TextStyle(fontSize: 12, color: c.tenue)),
                 const SizedBox(height: 4),
                 Wrap(spacing: 6, children: [
                   if (p.rol == 'admin') Etiqueta('Administrador', fondo: c.acentoSuave, color: c.acento),
@@ -137,6 +180,7 @@ class _TarjetaPersona extends StatelessWidget {
           ]),
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
             TextButton.icon(onPressed: () => _foto(context), icon: const Icon(Icons.photo_camera_outlined, size: 18), label: const Text('Foto')),
+            TextButton.icon(onPressed: () => _pago(context), icon: const Icon(Icons.payments_outlined, size: 18), label: const Text('Pago')),
             TextButton.icon(onPressed: () => _clave(context), icon: const Icon(Icons.key_outlined, size: 18), label: const Text('Clave')),
             if (p.id != yo.id)
               TextButton.icon(
@@ -167,6 +211,7 @@ class _NuevoTrabajadorState extends State<_NuevoTrabajador> {
   final _correo = TextEditingController();
   final _pago = TextEditingController(text: '55');
   String _area = 'Ventas';
+  String _tipoPago = 'fijo';
   Uint8List? _foto;
   bool _guardando = false;
   String? _error;
@@ -212,6 +257,7 @@ class _NuevoTrabajadorState extends State<_NuevoTrabajador> {
       'telefono': _telefono.text.trim(),
       'correo': _correo.text.trim(),
       'pago_por_dia': _pago.text,
+      'tipo_pago': _tipoPago,
       'hora_entrada': '08:00',
       'tolerancia_min': '10',
     }, _foto!);
@@ -232,7 +278,7 @@ class _NuevoTrabajadorState extends State<_NuevoTrabajador> {
     const espacio = SizedBox(height: 12);
     return Scaffold(
       appBar: AppBar(title: const Text('NUEVO TRABAJADOR')),
-      body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
+      body: ListView(padding: rellenoLista(context, abajo: 32), children: [
         InkWell(
           onTap: _tomarFoto,
           borderRadius: BorderRadius.circular(14),
@@ -278,11 +324,23 @@ class _NuevoTrabajadorState extends State<_NuevoTrabajador> {
           onChanged: (v) => setState(() => _area = v ?? 'Ventas'),
         ),
         espacio,
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'fijo', label: Text('Pago fijo')),
+            ButtonSegment(value: 'variable', label: Text('Por rendimiento')),
+          ],
+          selected: {_tipoPago},
+          onSelectionChanged: (v) => setState(() => _tipoPago = v.first),
+        ),
+        espacio,
         TextField(
           controller: _pago,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-          decoration: const InputDecoration(labelText: 'Pago por día (S/)'),
+          decoration: InputDecoration(
+            labelText: _tipoPago == 'variable' ? 'Pago de referencia por día (S/)' : 'Pago por día (S/)',
+            helperText: _tipoPago == 'variable' ? 'El monto de cada día se registra al pagar, según su rendimiento.' : null,
+          ),
         ),
         espacio,
         TextField(controller: _telefono, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Teléfono (opcional)')),

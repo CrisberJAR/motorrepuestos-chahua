@@ -99,32 +99,63 @@ class Kpi extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Colores.de(context);
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
           Text(etiqueta.toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10.5, letterSpacing: 0.5, color: c.tenue)),
-          Text(valor, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: color ?? c.tinta, fontFeatures: const [FontFeature.tabularFigures()])),
-          if (detalle != null) Text(detalle!, style: TextStyle(fontSize: 11, color: c.tenue)),
+          // El valor se achica si no entra (montos grandes o letra del celular aumentada) en vez de encimarse.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(valor, maxLines: 1, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: color ?? c.tinta, fontFeatures: const [FontFeature.tabularFigures()])),
+          ),
+          if (detalle != null) Text(detalle!, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: c.tenue)),
         ]),
       ),
     );
   }
 }
 
+/// Indicadores en dos columnas. Cada fila toma la altura de su contenido (no hay alto fijo que se desborde).
 class GrillaKpis extends StatelessWidget {
   final List<Widget> hijos;
   const GrillaKpis(this.hijos, {super.key});
   @override
-  Widget build(BuildContext context) => GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 2.1,
-        children: hijos,
-      );
+  Widget build(BuildContext context) {
+    final filas = <Widget>[];
+    for (var i = 0; i < hijos.length; i += 2) {
+      if (filas.isNotEmpty) filas.add(const SizedBox(height: 10));
+      filas.add(IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(child: hijos[i]),
+          const SizedBox(width: 10),
+          Expanded(child: i + 1 < hijos.length ? hijos[i + 1] : const SizedBox()),
+        ]),
+      ));
+    }
+    return Column(mainAxisSize: MainAxisSize.min, children: filas);
+  }
 }
+
+/// Relleno de una lista que deja libre la barra de navegación del sistema (Android 15 dibuja la app detrás de ella).
+EdgeInsets rellenoLista(BuildContext context, {double lados = 16, double arriba = 0, double abajo = 24}) =>
+    EdgeInsets.fromLTRB(lados, arriba, lados, abajo + MediaQuery.paddingOf(context).bottom);
+
+/// Etiqueta del tipo de pago de un trabajador.
+class ChipTipoPago extends StatelessWidget {
+  final String tipo;
+  final double tarifa;
+  const ChipTipoPago({super.key, required this.tipo, required this.tarifa});
+  @override
+  Widget build(BuildContext context) {
+    final c = Colores.de(context);
+    return tipo == 'variable'
+        ? Etiqueta('Por rendimiento', fondo: c.infoSuave, color: c.info)
+        : Etiqueta('Fijo S/ ${tarifa.toStringAsFixed(2)}/día', fondo: c.hundido, color: c.tenue);
+  }
+}
+
 
 class AvatarPersona extends StatelessWidget {
   final String iniciales;

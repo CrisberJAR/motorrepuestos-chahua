@@ -56,40 +56,21 @@ class _LoginVistaState extends State<LoginVista> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 36, 24, 28),
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            'MOTORREPUESTOS',
-                            style: TextStyle(
-                              color: c.lateralTinta.withValues(alpha: 0.6),
-                              fontSize: 11,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 46,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 3,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'CHA',
-                                  style: TextStyle(color: c.lateralTinta),
-                                ),
-                                TextSpan(
-                                  text: 'HUA',
-                                  style: TextStyle(color: c.acento),
-                                ),
-                              ],
+                          Center(
+                            child: Image.asset(
+                              'assets/logo_chahua.png',
+                              height: 150,
+                              semanticLabel: 'Motorrepuestos Chahua',
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Asistencia con reconocimiento facial, permisos y pagos.',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               color: c.lateralTinta.withValues(alpha: 0.75),
                             ),

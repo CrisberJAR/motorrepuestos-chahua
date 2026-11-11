@@ -1,0 +1,8 @@
+/*
+!/web
+web/node_modules
+web/.next
+web/.vercel
+web/.env
+web/.env*.local
+web/tsconfig.tsbuildinfo

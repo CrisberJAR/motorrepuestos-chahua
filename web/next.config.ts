@@ -16,10 +16,14 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
 
   // Se cargan desde node_modules en tiempo de ejecución (no se empaquetan con webpack).
-  serverExternalPackages: ['@vladmandic/face-api', '@tensorflow/tfjs', '@tensorflow/tfjs-backend-wasm', 'sharp'],
+  serverExternalPackages: ['@vladmandic/face-api', '@tensorflow/tfjs', '@tensorflow/tfjs-backend-wasm', 'sharp', 'exceljs', 'jspdf', 'jspdf-autotable'],
 
   // Vercel debe incluir los pesos de los modelos y los binarios WebAssembly en las funciones de IA.
-  outputFileTracingIncludes: Object.fromEntries(rutasIA.map((ruta) => [ruta, archivosIA])),
+  outputFileTracingIncludes: {
+    ...Object.fromEntries(rutasIA.map((ruta) => [ruta, archivosIA])),
+    // Logo para el encabezado de los PDF
+    '/api/reportes': ['./public/logo-reporte.png'],
+  },
 };
 
 export default nextConfig;

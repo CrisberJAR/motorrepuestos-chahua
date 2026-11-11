@@ -1,5 +1,6 @@
 'use client';
 import { Eye, EyeOff, LogIn, ScanFace } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Boton, Campo, claseInput } from '@/components/ui';
@@ -36,12 +37,7 @@ export default function PaginaLogin() {
   return (
     <main className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden flex-col justify-between overflow-hidden bg-lateral p-10 text-lateral-tinta lg:flex">
-        <div>
-          <p className="font-mono text-[11px] tracking-[0.12em] text-lateral-tenue uppercase">Motorrepuestos</p>
-          <p className="titulo-display text-6xl tracking-wider">
-            CHA<span className="text-acento">HUA</span>
-          </p>
-        </div>
+        <Image src="/logo-chahua.png" alt="Motorrepuestos Chahua" width={220} height={217} priority className="drop-shadow-lg" />
         <div className="max-w-md space-y-4">
           <h1 className="titulo-display text-4xl text-balance">Gestión de personal, asistencia y pagos</h1>
           <p className="text-[15px] leading-relaxed text-lateral-tenue">
@@ -57,12 +53,7 @@ export default function PaginaLogin() {
 
       <section className="flex items-center justify-center px-4 py-10 sm:px-8">
         <form onSubmit={ingresar} className="flex w-full max-w-sm flex-col gap-5" noValidate>
-          <div className="lg:hidden">
-            <p className="font-mono text-[11px] tracking-[0.12em] text-tenue uppercase">Motorrepuestos</p>
-            <p className="titulo-display text-5xl tracking-wider">
-              CHA<span className="text-acento">HUA</span>
-            </p>
-          </div>
+          <Image src="/logo-chahua.png" alt="Motorrepuestos Chahua" width={150} height={148} priority className="self-center lg:hidden" />
           <div>
             <h2 className="titulo-display text-3xl">Iniciar sesión</h2>
             <p className="mt-1 text-[13px] text-tenue">Usuario y contraseña inicial: tu DNI.</p>

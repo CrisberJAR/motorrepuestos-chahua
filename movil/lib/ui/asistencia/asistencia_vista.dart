@@ -6,6 +6,8 @@ import '../../core/tema.dart';
 import '../../data/modelos.dart';
 import '../../data/repositorios.dart';
 import '../comunes/widgets.dart';
+import '../comunes/perfil_boton.dart';
+import '../comunes/reportes.dart';
 import '../sesion_vm.dart';
 import 'asistencia_vm.dart';
 
@@ -22,10 +24,10 @@ class AsistenciaVista extends StatelessWidget {
         final r = vm.totales;
         final c = Colores.de(context);
         return Scaffold(
-          appBar: AppBar(title: Text(yo.esAdmin ? 'ASISTENCIA' : 'MI ASISTENCIA')),
+          appBar: AppBar(title: Text(yo.esAdmin ? 'ASISTENCIA' : 'MI ASISTENCIA'), actions: const [BotonReportes(tipo: 'asistencia'), BotonPerfil()]),
           body: RefreshIndicator(
             onRefresh: vm.cargar,
-            child: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 24), children: [
+            child: ListView(padding: rellenoLista(context, abajo: 24), children: [
               SegmentedButton<ModoPeriodo>(
                 segments: const [
                   ButtonSegment(value: ModoPeriodo.semana, label: Text('Semana'), icon: Icon(Icons.view_week_outlined)),
@@ -87,7 +89,7 @@ class _TarjetaTrabajador extends StatelessWidget {
         onTap: () => Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => Scaffold(
             appBar: AppBar(title: Text(fila.persona.nombreCorto.toUpperCase())),
-            body: ListView(padding: const EdgeInsets.all(16), children: [
+            body: ListView(padding: rellenoLista(context, arriba: 16), children: [
               Text('${fila.persona.cargo} · DNI ${fila.persona.dni}', style: TextStyle(color: c.tenue)),
               const SizedBox(height: 12),
               DetalleTrabajador(fila: fila, modo: modo),

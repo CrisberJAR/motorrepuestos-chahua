@@ -1,6 +1,7 @@
 'use client';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { BotonReportes } from '@/components/reportes';
 import { useYo } from '@/components/sesion';
 import { Avatar, Boton, Cargando, ChipDia, Encabezado, FilaKpis, Kpi, Leyenda, MensajeError, RELLENO_DIA, Segmentado, Tarjeta } from '@/components/ui';
 import {
@@ -76,11 +77,14 @@ export default function PaginaAsistencia() {
               : 'Tu registro por semana y por mes.'
         }
         acciones={
-          yo.esAdmin && filaElegida ? (
-            <Boton variante="secundario" icono={<ArrowLeft className="size-4" />} onClick={() => setElegido(null)}>
-              Todo el personal
-            </Boton>
-          ) : undefined
+          <>
+            <BotonReportes tipo="asistencia" />
+            {yo.esAdmin && filaElegida && (
+              <Boton variante="secundario" icono={<ArrowLeft className="size-4" />} onClick={() => setElegido(null)}>
+                Todo el personal
+              </Boton>
+            )}
+          </>
         }
       />
 

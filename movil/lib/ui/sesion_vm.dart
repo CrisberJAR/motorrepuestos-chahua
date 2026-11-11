@@ -31,6 +31,17 @@ class SesionVm extends VmBase {
     avisar();
   }
 
+  /// Vuelve a leer los datos propios (tras cambiar la foto o los datos de contacto).
+  Future<void> recargarYo() async {
+    try {
+      final nuevo = await _auth.cargarYo();
+      if (nuevo != null) {
+        yo = nuevo;
+        avisar();
+      }
+    } catch (_) {}
+  }
+
   /// Devuelve un mensaje de error o null si ingresó.
   Future<String?> ingresar(String dni, String clave) async {
     if (!RegExp(r'^\d{8}$').hasMatch(dni)) return 'Tu usuario es tu DNI: 8 dígitos.';

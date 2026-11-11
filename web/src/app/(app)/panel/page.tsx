@@ -8,7 +8,7 @@ import { Avatar, Cargando, ChipDia, Encabezado, FilaKpis, Kpi, Leyenda, MensajeE
 import { ahoraLima, capitalizar, diaSemana, fechaCorta, fechaLarga, horaCorta, nombrePeriodo, periodoDe, rangoPeriodo, soles, ultimosLaborables } from '@/lib/fechas';
 import { useConsulta, useFotos } from '@/lib/hooks';
 import { supabaseNavegador } from '@/lib/supabase/navegador';
-import { nombreCorto, type DiaAsistencia, type Permiso } from '@/lib/tipos';
+import { nombreCorto, type DiaAsistencia, type PagoPendiente, type Permiso } from '@/lib/tipos';
 
 export default function PaginaPanel() {
   const yo = useYo();
@@ -147,15 +147,20 @@ function PanelTrabajador() {
   const { datos, error, cargando, recargar } = useConsulta(
     async () => {
       const sb = supabaseNavegador();
-      const [detalle, permisos] = await Promise.all([
+      const [detalle, permisos, pendiente] = await Promise.all([
         sb.rpc('detalle_asistencia', { p_desde: desde, p_hasta: hasta, p_personal_id: yo.id }),
         sb.from('permisos').select('*').eq('personal_id', yo.id).order('created_at', { ascending: false }).limit(3),
+        sb.rpc('pagos_pendientes', { p_personal_id: yo.id }),
       ]);
       if (detalle.error) throw new Error(detalle.error.message);
-      return { detalle: (detalle.data || []) as DiaAsistencia[], permisos: (permisos.data || []) as Permiso[] };
+      return {
+        detalle: (detalle.data || []) as DiaAsistencia[],
+        permisos: (permisos.data || []) as Permiso[],
+        pendiente: ((pendiente.data || []) as PagoPendiente[])[0] || null,
+      };
     },
     [mes, yo.id],
-    ['asistencias', 'permisos'],
+    ['asistencias', 'permisos', 'pagos'],
   );
 
   if (cargando && !datos) return <Cargando />;
@@ -165,8 +170,7 @@ function PanelTrabajador() {
   const dia = datos.detalle.find((d) => d.fecha === hoy);
   const cuenta = (e: string) => datos.detalle.filter((d) => d.estado === e).length;
   const asistidos = cuenta('asistio') + cuenta('tardanza');
-  const permisoPagado = datos.detalle.filter((d) => d.estado === 'permiso' && d.permiso_con_goce).length;
-  const acumulado = (asistidos + permisoPagado) * yo.pago_por_dia;
+  const pend = datos.pendiente;
 
   const textoHoy = !dia
     ? 'Hoy es domingo: no es día laborable.'
@@ -193,10 +197,12 @@ function PanelTrabajador() {
       </FilaKpis>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Tarjeta titulo="Pago acumulado del mes" extra="se actualiza con cada día trabajado">
-          <p className="cifras font-display text-5xl font-bold">{soles(acumulado)}</p>
+        <Tarjeta titulo="Por cobrar" extra="desde tu último pago">
+          <p className="cifras font-display text-5xl font-bold">{soles(Number(pend?.monto_pendiente || 0))}</p>
           <p className="text-xs text-tenue">
-            ({asistidos} días{permisoPagado ? ` + ${permisoPagado} de permiso pagado` : ''}) × {soles(yo.pago_por_dia)} por día
+            {pend && pend.desde <= pend.hasta
+              ? `${pend.dias_asistidos + pend.dias_permiso_pagado} día(s) desde el ${fechaLarga(pend.desde, false)}`
+              : 'Estás al día con tus pagos.'}
           </p>
           <Link href="/pagos" className="inline-flex items-center gap-1 text-[13px] font-semibold text-acento">
             Ver mis pagos <ArrowRight className="size-3.5" />

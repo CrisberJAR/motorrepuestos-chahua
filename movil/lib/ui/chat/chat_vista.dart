@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/tema.dart';
 import '../../data/modelos.dart';
 import '../../data/repositorios.dart';
+import '../comunes/perfil_boton.dart';
 import '../sesion_vm.dart';
 import 'chat_vm.dart';
 
@@ -56,7 +57,7 @@ class _ChatState extends State<_Chat> {
     final vm = context.watch<ChatVm>();
     final c = Colores.de(context);
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: widget.conAtras, title: const Text('ASISTENTE IA')),
+      appBar: AppBar(automaticallyImplyLeading: widget.conAtras, title: const Text('ASISTENTE IA'), actions: [if (!widget.conAtras) const BotonPerfil()]),
       body: Column(children: [
         Expanded(
           child: ListView.builder(

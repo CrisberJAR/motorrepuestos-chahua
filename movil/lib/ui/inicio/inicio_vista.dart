@@ -6,6 +6,7 @@ import '../../core/tema.dart';
 import '../../data/modelos.dart';
 import '../../data/repositorios.dart';
 import '../comunes/widgets.dart';
+import '../comunes/perfil_boton.dart';
 import '../sesion_vm.dart';
 import 'inicio_vm.dart';
 
@@ -22,17 +23,14 @@ class InicioVista extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(yo.esAdmin ? 'HOY' : 'HOLA, ${yo.nombres.split(' ').first.toUpperCase()}'),
-            actions: [
-              if (!yo.esAdmin)
-                IconButton(tooltip: 'Cerrar sesión', icon: const Icon(Icons.logout), onPressed: () => context.read<SesionVm>().salir()),
-            ],
+            actions: const [BotonPerfil()],
           ),
           body: RefreshIndicator(
             onRefresh: vm.cargar,
             child: vm.cargando && vm.deHoy.isEmpty && vm.delMes.isEmpty
                 ? ListView(children: const [Cargando()])
                 : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: rellenoLista(context, abajo: 24),
                     children: [
                       Text(Fechas.capitalizar(Fechas.larga(vm.hoy, anio: true)), style: TextStyle(color: Colores.de(context).tenue)),
                       const SizedBox(height: 12),
@@ -129,12 +127,20 @@ class InicioVista extends StatelessWidget {
         onTap: alVerPagos,
         borderRadius: BorderRadius.circular(12),
         child: Tarjeta(
-          titulo: 'Pago acumulado del mes',
+          titulo: 'Por cobrar',
           extra: const Icon(Icons.chevron_right),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(Fechas.soles(vm.pagoAcumulado), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900)),
-            Text('(${r.asistidos} días${r.permisosPagados > 0 ? ' + ${r.permisosPagados} de permiso pagado' : ''}) × ${Fechas.soles(yo.pagoPorDia)}',
-                style: TextStyle(fontSize: 12, color: c.tenue)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(Fechas.soles(vm.porCobrar?.monto ?? 0), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900)),
+            ),
+            Text(
+              vm.porCobrar == null || vm.porCobrar!.alDia
+                  ? 'Estás al día con tus pagos.'
+                  : '${vm.porCobrar!.diasAPagar} día(s) desde el ${Fechas.diaMes(vm.porCobrar!.desde)} (desde tu último pago)',
+              style: TextStyle(fontSize: 12, color: c.tenue),
+            ),
           ]),
         ),
       ),

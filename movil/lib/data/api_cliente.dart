@@ -71,6 +71,21 @@ class ApiCliente {
     });
   }
 
+  /// Descarga un archivo (PDF o Excel). Devuelve los bytes y el nombre sugerido por el servidor.
+  Future<({Uint8List bytes, String nombre})> getArchivo(String ruta, Map<String, String> params) async {
+    final token = await _token();
+    return _conRed(() async {
+      final r = await http.get(_url(ruta).replace(queryParameters: params), headers: {'Authorization': 'Bearer $token'}).timeout(const Duration(seconds: 60));
+      final tipo = r.headers['content-type'] ?? '';
+      if (r.statusCode >= 400 || tipo.contains('application/json')) {
+        _leer(r); // lanza ApiExcepcion con el mensaje del servidor
+        throw ApiExcepcion('No se pudo descargar el archivo (${r.statusCode}).', r.statusCode);
+      }
+      final nombre = RegExp(r'filename="([^"]+)"').firstMatch(r.headers['content-disposition'] ?? '')?.group(1) ?? 'reporte.${params['formato'] ?? 'pdf'}';
+      return (bytes: r.bodyBytes, nombre: nombre);
+    });
+  }
+
   /// multipart/form-data con el campo "imagen" (JPEG).
   Future<Map<String, dynamic>> postImagen(
     String ruta,

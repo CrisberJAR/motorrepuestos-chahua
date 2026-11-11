@@ -24,7 +24,7 @@ export default function PaginaPersonal() {
     async () => {
       const { data, error: e } = await supabaseNavegador()
         .from('personal')
-        .select('id, user_id, dni, nombres, apellidos, cargo, area, telefono, correo, sueldo_base, pago_por_dia, hora_entrada, hora_salida, tolerancia_min, foto_rostro_url, rol, estado, fecha_ingreso')
+        .select('id, user_id, dni, nombres, apellidos, cargo, area, telefono, correo, sueldo_base, pago_por_dia, tipo_pago, hora_entrada, hora_salida, tolerancia_min, foto_rostro_url, rol, estado, fecha_ingreso')
         .order('rol')
         .order('apellidos');
       if (e) throw new Error(e.message);
@@ -110,7 +110,7 @@ export default function PaginaPersonal() {
                     DNI {p.dni} · {p.cargo} · {p.area} · entrada {p.hora_entrada.slice(0, 5)} (+{p.tolerancia_min} min)
                   </p>
                 </div>
-                <span className="cifras font-mono text-xs">{soles(Number(p.pago_por_dia))}/día</span>
+                <span className="cifras font-mono text-xs">{p.tipo_pago === 'variable' ? `Rendimiento · ref. ${soles(Number(p.pago_por_dia))}` : `${soles(Number(p.pago_por_dia))}/día`}</span>
                 {p.foto_rostro_url ? <Chip clase="bg-ok-suave text-ok">Rostro registrado</Chip> : <Chip clase="bg-alerta-suave text-alerta">Sin rostro</Chip>}
                 <div className="flex flex-wrap gap-1">
                   <Boton variante="fantasma" tam="sm" icono={<Pencil className="size-3.5" />} onClick={() => setDialogo({ tipo: 'editar', persona: p })}>
@@ -163,7 +163,7 @@ export default function PaginaPersonal() {
 /* ---------- Nuevo trabajador ---------- */
 function FormularioNuevo({ onListo }: { onListo: () => void }) {
   const { avisar } = useAvisos();
-  const [d, setD] = useState({ dni: '', nombres: '', apellidos: '', cargo: '', area: 'Ventas', telefono: '', correo: '', pago_por_dia: '55', hora_entrada: '08:00', tolerancia_min: '10' });
+  const [d, setD] = useState({ dni: '', nombres: '', apellidos: '', cargo: '', area: 'Ventas', telefono: '', correo: '', pago_por_dia: '55', tipo_pago: 'fijo', hora_entrada: '08:00', tolerancia_min: '10' });
   const [foto, setFoto] = useState<Blob | null>(null);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -218,7 +218,13 @@ function FormularioNuevo({ onListo }: { onListo: () => void }) {
             ))}
           </select>
         </Campo>
-        <Campo etiqueta="Pago por día (S/)">
+        <Campo etiqueta="Tipo de pago" ayuda={d.tipo_pago === 'variable' ? 'El monto de cada día se registra al pagar, según su rendimiento. El pago por día sirve de referencia.' : 'Gana el mismo monto cada día asistido.'}>
+          <select id="nuevo-tipo-pago" className={claseInput} value={d.tipo_pago} onChange={cambiar('tipo_pago')}>
+            <option value="fijo">Fijo por día</option>
+            <option value="variable">Por rendimiento (variable)</option>
+          </select>
+        </Campo>
+        <Campo etiqueta={d.tipo_pago === 'variable' ? 'Pago de referencia por día (S/)' : 'Pago por día (S/)'}>
           <input id="nuevo-pago" className={claseInput} type="number" min="1" step="0.5" value={d.pago_por_dia} onChange={cambiar('pago_por_dia')} />
         </Campo>
         <Campo etiqueta="Correo (opcional)">
@@ -257,6 +263,7 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
     telefono: persona.telefono || '',
     correo: persona.correo || '',
     pago_por_dia: String(persona.pago_por_dia),
+    tipo_pago: persona.tipo_pago || 'fijo',
     hora_entrada: persona.hora_entrada.slice(0, 5),
     tolerancia_min: String(persona.tolerancia_min),
   });
@@ -283,6 +290,7 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
         telefono: d.telefono.trim() || null,
         correo: d.correo.trim() || null,
         pago_por_dia: pago,
+        tipo_pago: d.tipo_pago,
         sueldo_base: Math.round(pago * 26 * 100) / 100,
         hora_entrada: `${d.hora_entrada}:00`,
         tolerancia_min: tolerancia,
@@ -290,7 +298,7 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
       .eq('id', persona.id);
     setGuardando(false);
     if (err) return setError(`No se pudo guardar: ${err.message}`);
-    avisar('Datos actualizados. La planilla del mes en curso usará el nuevo pago por día al recalcularse.');
+    avisar('Datos actualizados. Lo pendiente de pago ya usa los nuevos valores.');
     onListo();
   }
 
@@ -306,7 +314,13 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
       </Campo>
       <Campo etiqueta="Teléfono"><input id="editar-telefono" className={claseInput} value={d.telefono} onChange={cambiar('telefono')} /></Campo>
       <Campo etiqueta="Correo"><input id="editar-correo" className={claseInput} type="email" value={d.correo} onChange={cambiar('correo')} /></Campo>
-      <Campo etiqueta="Pago por día (S/)"><input id="editar-pago" className={claseInput} type="number" min="1" step="0.5" value={d.pago_por_dia} onChange={cambiar('pago_por_dia')} /></Campo>
+      <Campo etiqueta="Tipo de pago" ayuda={d.tipo_pago === 'variable' ? 'El monto de cada día se registra al pagar, según su rendimiento. El pago por día sirve de referencia.' : 'Gana el mismo monto cada día asistido.'}>
+        <select id="editar-tipo-pago" className={claseInput} value={d.tipo_pago} onChange={cambiar('tipo_pago')}>
+          <option value="fijo">Fijo por día</option>
+          <option value="variable">Por rendimiento (variable)</option>
+        </select>
+      </Campo>
+      <Campo etiqueta={d.tipo_pago === 'variable' ? 'Pago de referencia por día (S/)' : 'Pago por día (S/)'}><input id="editar-pago" className={claseInput} type="number" min="1" step="0.5" value={d.pago_por_dia} onChange={cambiar('pago_por_dia')} /></Campo>
       <Campo etiqueta="Hora de entrada"><input id="editar-entrada" className={claseInput} type="time" value={d.hora_entrada} onChange={cambiar('hora_entrada')} /></Campo>
       <Campo etiqueta="Tolerancia (min)"><input id="editar-tolerancia" className={claseInput} type="number" min="0" max="60" value={d.tolerancia_min} onChange={cambiar('tolerancia_min')} /></Campo>
       <Campo etiqueta="DNI"><input id="editar-dni" className={claseInput} value={persona.dni} disabled /></Campo>

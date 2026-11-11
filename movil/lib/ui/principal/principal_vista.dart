@@ -9,6 +9,10 @@ import '../inicio/inicio_vista.dart';
 import '../pagos/pagos_vista.dart';
 import '../permisos/permisos_vista.dart';
 import '../personal/personal_vista.dart';
+import '../comunes/perfil_boton.dart';
+import '../comunes/widgets.dart';
+import '../comunes/reportes.dart';
+import '../configuracion/configuracion_vista.dart';
 import '../sesion_vm.dart';
 
 /// Navegación inferior según el rol.
@@ -85,15 +89,19 @@ class _MasVista extends StatelessWidget {
         );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('MÁS')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      appBar: AppBar(title: const Text('MÁS'), actions: const [BotonPerfil()]),
+      body: ListView(padding: rellenoLista(context, arriba: 16), children: [
         Card(
           child: Column(children: [
-            opcion(Icons.account_balance_wallet_outlined, 'Pagos y planilla', 'Calcular planilla y marcar pagos', () => abrir(const PagosVista(conAtras: true))),
+            opcion(Icons.account_balance_wallet_outlined, 'Pagos', 'Por pagar, registrar pagos y comprobantes', () => abrir(const PagosVista(conAtras: true))),
             const Divider(height: 1),
             opcion(Icons.groups_outlined, 'Personal', 'Registrar trabajador con foto, contraseñas', () => abrir(const PersonalVista())),
             const Divider(height: 1),
             opcion(Icons.smart_toy_outlined, 'Asistente IA', 'Consultas y permisos por chat', () => abrir(const ChatVista(conAtras: true))),
+            const Divider(height: 1),
+            opcion(Icons.download_outlined, 'Reportes', 'Asistencia y pagos en PDF o Excel', () => abrirHojaReportes(context)),
+            const Divider(height: 1),
+            opcion(Icons.settings_outlined, 'Configuración', 'Mi perfil, contraseña, términos y ayuda', () => abrir(const ConfiguracionVista())),
           ]),
         ),
         const SizedBox(height: 16),

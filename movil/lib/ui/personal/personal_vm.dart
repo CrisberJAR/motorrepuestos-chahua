@@ -57,6 +57,15 @@ class PersonalVm extends VmBase {
   Future<(String, bool)> cambiarFoto(Personal p, Uint8List foto) => _resultado(() => _ia.registrarRostro(p.id, foto));
   Future<(String, bool)> cambiarClave(Personal p, String clave) => _resultado(() => _ia.cambiarClave(p.id, clave));
 
+  Future<(String, bool)> cambiarPago(Personal p, String tipo, double pagoPorDia) => _resultado(() async {
+        await _repo.actualizarPersonal(p.id, {
+          'tipo_pago': tipo,
+          'pago_por_dia': pagoPorDia,
+          'sueldo_base': (pagoPorDia * 26 * 100).roundToDouble() / 100,
+        });
+        return 'Pago de ${p.nombres.split(' ').first} actualizado: ${tipo == 'variable' ? 'por rendimiento' : 'fijo por día'}.';
+      });
+
   Future<(String, bool)> cambiarEstado(Personal p) => _resultado(() async {
         final nuevo = p.activo ? 'inactivo' : 'activo';
         await _repo.actualizarPersonal(p.id, {'estado': nuevo});
