@@ -84,6 +84,26 @@ class _TarjetaPersona extends StatelessWidget {
     await _ejecutar(context, vm.cambiarFoto(persona, foto));
   }
 
+  Future<void> _rol(BuildContext context) async {
+    final hacerAdmin = persona.rol != 'admin';
+    final nombre = persona.nombres.split(' ').first;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(hacerAdmin ? '¿Hacer administrador a $nombre?' : '¿Quitar el rol de administrador a $nombre?'),
+        content: Text(hacerAdmin
+            ? 'Tendrá acceso total: marcar asistencia con el rostro desde su celular, registrar pagos, aprobar permisos y gestionar al personal.'
+            : 'Pasará a ser trabajador: solo verá su información y podrá solicitar permisos.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(hacerAdmin ? 'Hacer administrador' : 'Quitar rol')),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await _ejecutar(context, vm.cambiarRol(persona, hacerAdmin ? 'admin' : 'trabajador'));
+  }
+
   Future<void> _pago(BuildContext context) async {
     final monto = TextEditingController(text: persona.pagoPorDia.toStringAsFixed(2));
     var tipo = persona.tipoPago;
@@ -178,10 +198,16 @@ class _TarjetaPersona extends StatelessWidget {
               ]),
             ),
           ]),
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          Wrap(alignment: WrapAlignment.end, children: [
             TextButton.icon(onPressed: () => _foto(context), icon: const Icon(Icons.photo_camera_outlined, size: 18), label: const Text('Foto')),
             TextButton.icon(onPressed: () => _pago(context), icon: const Icon(Icons.payments_outlined, size: 18), label: const Text('Pago')),
             TextButton.icon(onPressed: () => _clave(context), icon: const Icon(Icons.key_outlined, size: 18), label: const Text('Clave')),
+            if (p.id != yo.id)
+              TextButton.icon(
+                onPressed: () => _rol(context),
+                icon: Icon(p.rol == 'admin' ? Icons.remove_moderator_outlined : Icons.admin_panel_settings_outlined, size: 18),
+                label: Text(p.rol == 'admin' ? 'Quitar admin' : 'Hacer admin'),
+              ),
             if (p.id != yo.id)
               TextButton.icon(
                 onPressed: () => _ejecutar(context, vm.cambiarEstado(p)),
@@ -212,6 +238,7 @@ class _NuevoTrabajadorState extends State<_NuevoTrabajador> {
   final _pago = TextEditingController(text: '55');
   String _area = 'Ventas';
   String _tipoPago = 'fijo';
+  String _rol = 'trabajador';
   Uint8List? _foto;
   bool _guardando = false;
   String? _error;
@@ -258,6 +285,7 @@ class _NuevoTrabajadorState extends State<_NuevoTrabajador> {
       'correo': _correo.text.trim(),
       'pago_por_dia': _pago.text,
       'tipo_pago': _tipoPago,
+      'rol': _rol,
       'hora_entrada': '08:00',
       'tolerancia_min': '10',
     }, _foto!);
@@ -323,6 +351,23 @@ class _NuevoTrabajadorState extends State<_NuevoTrabajador> {
           items: [for (final a in areas) DropdownMenuItem(value: a, child: Text(a))],
           onChanged: (v) => setState(() => _area = v ?? 'Ventas'),
         ),
+        espacio,
+        Text('Rol', style: TextStyle(fontSize: 12, color: c.tenue)),
+        const SizedBox(height: 6),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'trabajador', label: Text('Trabajador'), icon: Icon(Icons.person_outline)),
+            ButtonSegment(value: 'admin', label: Text('Administrador'), icon: Icon(Icons.admin_panel_settings_outlined)),
+          ],
+          selected: {_rol},
+          onSelectionChanged: (v) => setState(() => _rol = v.first),
+        ),
+        if (_rol == 'admin')
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text('Acceso total: marca asistencia con el rostro, registra pagos, aprueba permisos y gestiona al personal.',
+                style: TextStyle(fontSize: 12, color: c.tenue)),
+          ),
         espacio,
         SegmentedButton<String>(
           segments: const [

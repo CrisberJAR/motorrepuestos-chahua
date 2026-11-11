@@ -252,9 +252,10 @@ begin
            coalesce(c.dias_asistidos, 0), coalesce(c.dias_permiso_pagado, 0), coalesce(c.dias_falta, 0),
            coalesce(c.tardanzas, 0), coalesce(c.dias_sin_monto, 0), coalesce(c.monto_base, 0)
       from rango r
+      -- Si ya se le pagó hasta hoy, el rango queda vacío (desde > hasta) y no hay nada pendiente.
       left join lateral (
-        select * from public.calcular_pago(r.id, r.r_desde, r.r_hasta) where r.r_desde <= r.r_hasta
-      ) c on true
+        select * from public.calcular_pago(r.id, r.r_desde, greatest(r.r_desde, r.r_hasta))
+      ) c on r.r_desde <= r.r_hasta
      order by r.apellidos, r.nombres;
 end;
 $$;

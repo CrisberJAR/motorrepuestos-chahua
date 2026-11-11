@@ -66,6 +66,13 @@ class PersonalVm extends VmBase {
         return 'Pago de ${p.nombres.split(' ').first} actualizado: ${tipo == 'variable' ? 'por rendimiento' : 'fijo por día'}.';
       });
 
+  Future<(String, bool)> cambiarRol(Personal p, String rol) => _resultado(() async {
+        await _repo.actualizarPersonal(p.id, {'rol': rol});
+        return rol == 'admin'
+            ? '${p.nombres.split(' ').first} ahora es administrador. Verá las opciones de administrador al volver a ingresar.'
+            : '${p.nombres.split(' ').first} ya no es administrador.';
+      });
+
   Future<(String, bool)> cambiarEstado(Personal p) => _resultado(() async {
         final nuevo = p.activo ? 'inactivo' : 'activo';
         await _repo.actualizarPersonal(p.id, {'estado': nuevo});

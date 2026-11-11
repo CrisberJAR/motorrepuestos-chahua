@@ -163,7 +163,7 @@ export default function PaginaPersonal() {
 /* ---------- Nuevo trabajador ---------- */
 function FormularioNuevo({ onListo }: { onListo: () => void }) {
   const { avisar } = useAvisos();
-  const [d, setD] = useState({ dni: '', nombres: '', apellidos: '', cargo: '', area: 'Ventas', telefono: '', correo: '', pago_por_dia: '55', tipo_pago: 'fijo', hora_entrada: '08:00', tolerancia_min: '10' });
+  const [d, setD] = useState({ dni: '', nombres: '', apellidos: '', cargo: '', area: 'Ventas', telefono: '', correo: '', pago_por_dia: '55', tipo_pago: 'fijo', rol: 'trabajador', hora_entrada: '08:00', tolerancia_min: '10' });
   const [foto, setFoto] = useState<Blob | null>(null);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -218,6 +218,12 @@ function FormularioNuevo({ onListo }: { onListo: () => void }) {
             ))}
           </select>
         </Campo>
+        <Campo etiqueta="Rol" ayuda={d.rol === 'admin' ? 'Acceso total: marca asistencia con el rostro, registra pagos, aprueba permisos y gestiona al personal.' : 'Solo ve su información y solicita permisos.'}>
+          <select id="nuevo-rol" className={claseInput} value={d.rol} onChange={cambiar('rol')}>
+            <option value="trabajador">Trabajador</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </Campo>
         <Campo etiqueta="Tipo de pago" ayuda={d.tipo_pago === 'variable' ? 'El monto de cada día se registra al pagar, según su rendimiento. El pago por día sirve de referencia.' : 'Gana el mismo monto cada día asistido.'}>
           <select id="nuevo-tipo-pago" className={claseInput} value={d.tipo_pago} onChange={cambiar('tipo_pago')}>
             <option value="fijo">Fijo por día</option>
@@ -255,6 +261,7 @@ function FormularioNuevo({ onListo }: { onListo: () => void }) {
 /* ---------- Editar datos ---------- */
 function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: () => void }) {
   const { avisar } = useAvisos();
+  const propio = useYo().id === persona.id;
   const [d, setD] = useState({
     nombres: persona.nombres,
     apellidos: persona.apellidos,
@@ -264,6 +271,7 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
     correo: persona.correo || '',
     pago_por_dia: String(persona.pago_por_dia),
     tipo_pago: persona.tipo_pago || 'fijo',
+    rol: persona.rol,
     hora_entrada: persona.hora_entrada.slice(0, 5),
     tolerancia_min: String(persona.tolerancia_min),
   });
@@ -291,6 +299,7 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
         correo: d.correo.trim() || null,
         pago_por_dia: pago,
         tipo_pago: d.tipo_pago,
+        rol: d.rol,
         sueldo_base: Math.round(pago * 26 * 100) / 100,
         hora_entrada: `${d.hora_entrada}:00`,
         tolerancia_min: tolerancia,
@@ -298,7 +307,13 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
       .eq('id', persona.id);
     setGuardando(false);
     if (err) return setError(`No se pudo guardar: ${err.message}`);
-    avisar('Datos actualizados. Lo pendiente de pago ya usa los nuevos valores.');
+    avisar(
+      d.rol !== persona.rol
+        ? d.rol === 'admin'
+          ? `${persona.nombres} ahora es administrador. Verá las opciones de administrador al volver a ingresar.`
+          : `${persona.nombres} ya no es administrador.`
+        : 'Datos actualizados. Lo pendiente de pago ya usa los nuevos valores.',
+    );
     onListo();
   }
 
@@ -314,6 +329,12 @@ function FormularioEditar({ persona, onListo }: { persona: Personal; onListo: ()
       </Campo>
       <Campo etiqueta="Teléfono"><input id="editar-telefono" className={claseInput} value={d.telefono} onChange={cambiar('telefono')} /></Campo>
       <Campo etiqueta="Correo"><input id="editar-correo" className={claseInput} type="email" value={d.correo} onChange={cambiar('correo')} /></Campo>
+      <Campo etiqueta="Rol" ayuda={d.rol === 'admin' ? 'Acceso total: marca asistencia con el rostro, registra pagos, aprueba permisos y gestiona al personal.' : 'Solo ve su información y solicita permisos.'}>
+        <select id="editar-rol" className={claseInput} value={d.rol} onChange={cambiar('rol')} disabled={propio}>
+          <option value="trabajador">Trabajador</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </Campo>
       <Campo etiqueta="Tipo de pago" ayuda={d.tipo_pago === 'variable' ? 'El monto de cada día se registra al pagar, según su rendimiento. El pago por día sirve de referencia.' : 'Gana el mismo monto cada día asistido.'}>
         <select id="editar-tipo-pago" className={claseInput} value={d.tipo_pago} onChange={cambiar('tipo_pago')}>
           <option value="fijo">Fijo por día</option>
